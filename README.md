@@ -18,7 +18,7 @@ https://titaniumsdk.com/api/titanium/ui/label.html
 * `calcRealSize` - BOOL true/false (defaults to false when not set) -- render the label to it´s real size, see example image
 
 ## Example images blended layers (without module / with module)
-<img src="./assets/blendedlayer.png" width="300" alt="blendedlayer" /> <img src="./assets/noblendedlayerpng" width="300" alt="noblendedlayer" />
+<img src="./assets/blendedlayer.png" width="300" alt="blendedlayer" /> <img src="./assets/noblendedlayer.png" width="300" alt="noblendedlayer" />
 
 ## Example images calcrealsize (calcrealsize false / calcrealsize true)
 <img src="./assets/nocalcrealsize.png" width="300" alt="nocalcrealsize" /> <img src="./assets/calcrealsize.png" width="300" alt="calcrealsizetrue" />
