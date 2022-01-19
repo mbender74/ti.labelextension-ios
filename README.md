@@ -7,6 +7,8 @@ TIUILabel Extension for iOS (Titanium Module)
 Improves Label rendering perfomance about factor 10,
 also no blended layers, improves also scroll perfromance in ListViews/ScrollViews/TableViews....
 
+(https://medium.com/prolific-interactive/improving-user-interactions-via-instruments-63a7981f59eb)
+
 Just add module in **tiapp.xml** no further steps needed!
 
 
