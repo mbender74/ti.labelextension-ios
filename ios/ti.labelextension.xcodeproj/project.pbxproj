@@ -26,6 +26,8 @@
 		24DD6CFA1134B3F500162E58 /* TiLabelextensionModule.m in Sources */ = {isa = PBXBuildFile; fileRef = 24DD6CF81134B3F500162E58 /* TiLabelextensionModule.m */; };
 		24DE9E1111C5FE74003F90F6 /* TiLabelextensionModuleAssets.h in Headers */ = {isa = PBXBuildFile; fileRef = 24DE9E0F11C5FE74003F90F6 /* TiLabelextensionModuleAssets.h */; };
 		24DE9E1211C5FE74003F90F6 /* TiLabelextensionModuleAssets.m in Sources */ = {isa = PBXBuildFile; fileRef = 24DE9E1011C5FE74003F90F6 /* TiLabelextensionModuleAssets.m */; };
+		2C886952279C3F5D00834314 /* TiUILabelProxy+Extended.h in Headers */ = {isa = PBXBuildFile; fileRef = 2C886950279C3F5D00834314 /* TiUILabelProxy+Extended.h */; };
+		2C886953279C3F5D00834314 /* TiUILabelProxy+Extended.m in Sources */ = {isa = PBXBuildFile; fileRef = 2C886951279C3F5D00834314 /* TiUILabelProxy+Extended.m */; };
 		2CAB2F97279890D10032E34C /* TiUILabel+Extended.h in Headers */ = {isa = PBXBuildFile; fileRef = 2CAB2F93279890D10032E34C /* TiUILabel+Extended.h */; };
 		2CAB2F98279890D10032E34C /* TiUILabel+Extended.m in Sources */ = {isa = PBXBuildFile; fileRef = 2CAB2F94279890D10032E34C /* TiUILabel+Extended.m */; };
 		AA747D9F0F9514B9006C5449 /* TiLabelextension_Prefix.pch in Headers */ = {isa = PBXBuildFile; fileRef = AA747D9E0F9514B9006C5449 /* TiLabelextension_Prefix.pch */; };
@@ -49,6 +51,8 @@
 		24DD6D1B1134B66800162E58 /* titanium.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; path = titanium.xcconfig; sourceTree = "<group>"; };
 		24DE9E0F11C5FE74003F90F6 /* TiLabelextensionModuleAssets.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = TiLabelextensionModuleAssets.h; path = Classes/TiLabelextensionModuleAssets.h; sourceTree = "<group>"; };
 		24DE9E1011C5FE74003F90F6 /* TiLabelextensionModuleAssets.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = TiLabelextensionModuleAssets.m; path = Classes/TiLabelextensionModuleAssets.m; sourceTree = "<group>"; };
+		2C886950279C3F5D00834314 /* TiUILabelProxy+Extended.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = "TiUILabelProxy+Extended.h"; path = "Classes/TiUILabelProxy+Extended.h"; sourceTree = "<group>"; };
+		2C886951279C3F5D00834314 /* TiUILabelProxy+Extended.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = "TiUILabelProxy+Extended.m"; path = "Classes/TiUILabelProxy+Extended.m"; sourceTree = "<group>"; };
 		2CAB2F93279890D10032E34C /* TiUILabel+Extended.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = "TiUILabel+Extended.h"; path = "Classes/TiUILabel+Extended.h"; sourceTree = "<group>"; };
 		2CAB2F94279890D10032E34C /* TiUILabel+Extended.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = "TiUILabel+Extended.m"; path = "Classes/TiUILabel+Extended.m"; sourceTree = "<group>"; };
 		AA747D9E0F9514B9006C5449 /* TiLabelextension_Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TiLabelextension_Prefix.pch; sourceTree = SOURCE_ROOT; };
@@ -103,6 +107,8 @@
 			children = (
 				2CAB2F93279890D10032E34C /* TiUILabel+Extended.h */,
 				2CAB2F94279890D10032E34C /* TiUILabel+Extended.m */,
+				2C886950279C3F5D00834314 /* TiUILabelProxy+Extended.h */,
+				2C886951279C3F5D00834314 /* TiUILabelProxy+Extended.m */,
 				24DE9E0F11C5FE74003F90F6 /* TiLabelextensionModuleAssets.h */,
 				24DE9E1011C5FE74003F90F6 /* TiLabelextensionModuleAssets.m */,
 				24DD6CF71134B3F500162E58 /* TiLabelextensionModule.h */,
@@ -131,6 +137,7 @@
 				2CAB2F97279890D10032E34C /* TiUILabel+Extended.h in Headers */,
 				24DD6CF91134B3F500162E58 /* TiLabelextensionModule.h in Headers */,
 				24DE9E1111C5FE74003F90F6 /* TiLabelextensionModuleAssets.h in Headers */,
+				2C886952279C3F5D00834314 /* TiUILabelProxy+Extended.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -206,6 +213,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				24DD6CFA1134B3F500162E58 /* TiLabelextensionModule.m in Sources */,
+				2C886953279C3F5D00834314 /* TiUILabelProxy+Extended.m in Sources */,
 				2CAB2F98279890D10032E34C /* TiUILabel+Extended.m in Sources */,
 				24DE9E1211C5FE74003F90F6 /* TiLabelextensionModuleAssets.m in Sources */,
 			);
@@ -228,9 +236,10 @@
 			buildSettings = {
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				DEPLOYMENT_POSTPROCESSING = YES;
 				DSTROOT = /tmp/TiLabelextension.dst;
 				GCC_C_LANGUAGE_STANDARD = c99;
-				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_OPTIMIZATION_LEVEL = s;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = TiLabelextension_Prefix.pch;
 				GCC_PREPROCESSOR_DEFINITIONS = "TI_VERSION=$(TI_VERSION)";
@@ -304,6 +313,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 24DD6D1B1134B66800162E58 /* titanium.xcconfig */;
 			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
@@ -341,7 +351,7 @@
 				ENABLE_TESTABILITY = YES;
 				GCC_C_LANGUAGE_STANDARD = c99;
 				GCC_NO_COMMON_BLOCKS = YES;
-				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_OPTIMIZATION_LEVEL = s;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = TiLabelextension_Prefix.pch;
 				GCC_PREPROCESSOR_DEFINITIONS = "TI_VERSION=$(TI_VERSION)";
@@ -360,7 +370,7 @@
 				GCC_WARN_UNUSED_VARIABLE = NO;
 				INSTALL_PATH = /usr/local/lib;
 				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
-				ONLY_ACTIVE_ARCH = YES;
+				ONLY_ACTIVE_ARCH = NO;
 				OTHER_CFLAGS = (
 					"-DDEBUG",
 					"-DTI_POST_1_2",
@@ -371,6 +381,7 @@
 				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "";
 				RUN_CLANG_STATIC_ANALYZER = NO;
 				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
 				USER_HEADER_SEARCH_PATHS = "";
 			};
 			name = Debug;
@@ -438,6 +449,7 @@
 				PRODUCT_NAME = ti.labelextension;
 				RUN_CLANG_STATIC_ANALYZER = NO;
 				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
 				USER_HEADER_SEARCH_PATHS = "";
 			};
 			name = Release;

@@ -7,12 +7,11 @@
 #define USE_TI_UILABEL
 #define USE_TI_UIATTRIBUTEDSTRING
 
-#import "TiUILabel.h"
-#import "TiUILabelProxy.h"
+#import "TiUILabelProxy+Extended.h"
+
 #import <CoreText/CoreText.h>
 #import <TitaniumKit/TiUtils.h>
 #import <TitaniumKit/UIImage+Resize.h>
-#import "TiUIAttributedStringProxy.h"
 #import <TitaniumKit/TiUIView.h>
 
 @interface TiUILabel (Extended)

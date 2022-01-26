@@ -7,7 +7,7 @@
 #define USE_TI_UILABEL
 #define USE_TI_UIATTRIBUTEDSTRING
 #import "TiUILabel+Extended.h"
-
+#import "TiUIAttributedStringProxy.h"
 
 @implementation TiUILabel (Extended)
 
@@ -249,9 +249,9 @@
 
     if (!CGRectIsEmpty(bounds)) {
         CGFloat diff = tempSize.size.width - label.frame.size.width;
-        
+        TiViewProxy *parent = [(TiViewProxy *)self.proxy parent];
+
         if([TiUtils boolValue:[self.proxy valueForKey:@"calcRealSize"] def:NO] == YES) {
-            TiViewProxy *parent = [(TiViewProxy *)self.proxy parent];
             tempSize.size.width = label.frame.size.width;
             tempSize.size.height = label.frame.size.height;
             tempFrame.size.width = label.frame.size.width;
@@ -482,10 +482,8 @@
 
   NSRange theRange = NSMakeRange(0, 0);
   NSString *url = nil;
-#ifdef USE_TI_UIATTRIBUTEDSTRING
   TiUIAttributedStringProxy *tempString = [[self proxy] valueForKey:@"attributedString"];
   url = [tempString getLink:idx];
-#endif
 
   if (url == nil || url.length == 0) {
     return NO;
@@ -599,6 +597,7 @@
   }
   if (label != nil) {
     [self padLabel];
+    [(TiViewProxy *)[self proxy] contentsWillChange];
   }
 }
 
@@ -678,7 +677,6 @@
 - (void)setAttributedString_:(id)arg
 {
     
-#ifdef USE_TI_UIATTRIBUTEDSTRING
   ENSURE_SINGLE_ARG(arg, TiUIAttributedStringProxy);
   [[self proxy] replaceValue:arg forKey:@"attributedString" notification:NO];
   [[self label] setAttributedText:[arg attributedString]];
@@ -701,7 +699,6 @@
   [self padLabel];
   [(TiViewProxy *)[self proxy] contentsWillChange];
   
-#endif
 }
 -(void)setBackgroundColor_:(id)color
 {
@@ -753,6 +750,7 @@
 {
   [[self label] setTextAlignment:[TiUtils textAlignmentValue:alignment]];
   [self padLabel];
+  [(TiViewProxy *)[self proxy] contentsWillChange];
 }
 
 - (void)setShadowColor_:(id)color

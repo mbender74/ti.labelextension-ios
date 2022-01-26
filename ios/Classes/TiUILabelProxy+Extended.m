@@ -4,11 +4,10 @@
  * Licensed under the terms of the Apache Public License
  * Please see the LICENSE included with this distribution for details.
  */
-#ifdef USE_TI_UILABEL
+#define USE_TI_UILABEL
+#define USE_TI_UIATTRIBUTEDSTRING
 
 #import "TiUILabelProxy+Extended.h"
-#import "TiUILabel.h"
-#import "TiUILabel+Extended.h
 #import <TitaniumKit/TiUtils.h>
 
 @implementation TiUILabelProxy (Extended)
@@ -16,4 +15,3 @@
 
 @end
 
-#endif
