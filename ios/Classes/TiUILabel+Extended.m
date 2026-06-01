@@ -694,7 +694,7 @@
     self.opaque = YES;
 
     [self label].opaque = YES;
-    super.opaque = YES;
+    self.opaque = YES;
    
   [self padLabel];
   [(TiViewProxy *)[self proxy] contentsWillChange];
@@ -707,7 +707,7 @@
         [self label].backgroundColor = color;
         super.backgroundColor = color;
         [self label].opaque = YES;
-        super.opaque = YES;
+        self.opaque = YES;
     }
     else
     {
@@ -718,7 +718,7 @@
         super.backgroundColor = aColor;
 
         [self label].opaque = YES;
-        super.opaque = YES;
+        self.opaque = YES;
     }
 }
 
