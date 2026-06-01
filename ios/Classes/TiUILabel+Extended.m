@@ -50,7 +50,7 @@
 }
 
 - (CGSize)sizeWithMyFontToSize:(UIFont *)fontToUse withString:(NSString *)string constrainedToSize:(CGSize)size {
-    
+
     NSAttributedString *attributedText =
         [[NSAttributedString alloc]
             initWithString:string
@@ -62,7 +62,7 @@
                                                options:NSStringDrawingUsesLineFragmentOrigin
                                                context:nil];
     CGSize newSize = rect.size;
-    
+
     return newSize;
 }
 
@@ -73,25 +73,22 @@
 }
 
 
-
-
 -(CGFloat)fontSizeWithFont:(UIFont *)font withString:(NSString *)string constrainedToSize:(CGSize)size minimumFontSize:(CGFloat)minimumFontSize {
     CGFloat height;
     CGFloat fontSize = [font pointSize];
-    
+
     CGSize newSize = [self sizeWithMyFontToSize:font withString:string constrainedToSize:CGSizeMake(size.width,CGFLOAT_MAX)];
     height = newSize.height;
     UIFont *newFont = font;
-    
-    //Reduce font size while too large, break if no height (empty string)
+
+    // Reduce font size while too large, break if no height (empty string)
     while (height > size.height && height != 0 && fontSize > minimumFontSize) {
         fontSize--;
-      //  newFont = [UIFont fontWithName:font.fontName size:fontSize];
         newFont = [UIFont systemFontOfSize:fontSize];
-        
+
         height = [self sizeWithMyFontToSize:newFont withString:string constrainedToSize:CGSizeMake(size.width,CGFLOAT_MAX)].height;
     };
-    
+
     // Loop through words in string and resize to fit
     for (NSString *word in [string componentsSeparatedByCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]]) {
         CGFloat width = [self sizeWithMyFont:newFont withString:word].width;
@@ -111,44 +108,40 @@
             CGSize actualLabelSize;
             actualLabelSize = [label.text boundingRectWithSize:CGSizeMake(initialLabelFrame.size.width, 0)
                                                   options:NSStringDrawingUsesLineFragmentOrigin
-                                                  attributes:@{NSFontAttributeName:[UIFont fontWithName:label.font.fontName size:label.font.pointSize]}
+                                                  attributes:@{NSFontAttributeName:label.font}
                                                   context:nil].size;
-            
-            
-            if (initialLabelFrame.size.width > 0 && [[self.proxy valueForUndefinedKey:@"width"] isEqual:@"FILL"]){
-                
+
+            BOOL isFillWidth = [[self.proxy valueForUndefinedKey:@"width"] isEqual:@"FILL"];
+
+            if (initialLabelFrame.size.width > 0 && isFillWidth) {
                 CGFloat adjustedFontSize = [self fontSizeWithFont:self.label.font withString:self.label.text constrainedToSize:initialLabelFrame.size minimumFontSize:minFontSize];
-                   self.label.font = [self.label.font fontWithSize:adjustedFontSize];
+                self.label.font = [self.label.font fontWithSize:adjustedFontSize];
             }
             CGRect labelRect = CGRectMake(label.frame.origin.x, label.frame.origin.y, actualLabelSize.width,actualLabelSize.height);
-            if ([[self.proxy valueForUndefinedKey:@"width"] isEqual:@"FILL"]){
+            if (isFillWidth) {
                 labelRect.size.width = initialLabelFrame.size.width;
             }
-            else {
-                if (initialLabelFrame.size.width < actualLabelSize.width) {
-                      labelRect.size.width = initialLabelFrame.size.width;
-                }
+            else if (initialLabelFrame.size.width < actualLabelSize.width) {
+                labelRect.size.width = initialLabelFrame.size.width;
             }
-            if ([[self proxy] valueForUndefinedKey:@"maxLines"]){
+            if ([[self proxy] valueForUndefinedKey:@"maxLines"]) {
                 CGFloat maxLines = [TiUtils floatValue:[[self proxy] valueForKey:@"maxLines"]];
-                if ([[self.proxy valueForUndefinedKey:@"height"] isEqual:@"SIZE"]){
+                (void)maxLines;
+                if ([[self.proxy valueForUndefinedKey:@"height"] isEqual:@"SIZE"]) {
                     labelRect.size.height = initialLabelFrame.size.height;
                 }
             }
-            else {
-                if (initialLabelFrame.size.height < actualLabelSize.height) {
-                    labelRect.size.height = initialLabelFrame.size.height;
-                }
-
+            else if (initialLabelFrame.size.height < actualLabelSize.height) {
+                labelRect.size.height = initialLabelFrame.size.height;
             }
 
            [label setFrame:CGRectIntegral(labelRect)];
     }
     else {
-        
+
       CGSize actualLabelSize;
       actualLabelSize = [label sizeThatFits:CGSizeMake(initialLabelFrame.size.width, 0)];
-        
+
       UIControlContentVerticalAlignment alignment = verticalAlign;
       if (alignment == UIControlContentVerticalAlignmentFill) {
         //IOS7 layout issue fix with attributed string.
@@ -175,20 +168,20 @@
           originX = 0;
         }
         CGRect labelRect = CGRectMake(originX, 0, actualLabelSize.width, actualLabelSize.height);
-          
+
         switch (alignment) {
             case UIControlContentVerticalAlignmentBottom:
 
               labelRect.origin.y = initialLabelFrame.size.height - actualLabelSize.height;
               break;
-                
+
             case UIControlContentVerticalAlignmentCenter:
               labelRect.origin.y = (initialLabelFrame.size.height - actualLabelSize.height) / 2;
                 if (labelRect.origin.y < 0) {
                     labelRect.size.height = (initialLabelFrame.size.height - labelRect.origin.y);
                 }
               break;
-                
+
             default:
 
               if (initialLabelFrame.size.height < actualLabelSize.height) {
@@ -210,11 +203,11 @@
                           labelRect.size.height = initialLabelFrame.size.height;
                       }
               }
-                
+
               break;
         }
         [label setFrame:CGRectIntegral(labelRect)];
-     
+
       } else {
         [label setFrame:initialLabelFrame];
       }
@@ -241,14 +234,13 @@
 {
     CGRect tempSize = bounds;
     CGRect tempFrame = frame;
-    
+
     #ifndef TI_USE_AUTOLAYOUT
-        
+
      initialLabelFrame = bounds;
     [self padLabel];
 
     if (!CGRectIsEmpty(bounds)) {
-        CGFloat diff = tempSize.size.width - label.frame.size.width;
         TiViewProxy *parent = [(TiViewProxy *)self.proxy parent];
 
         if([TiUtils boolValue:[self.proxy valueForKey:@"calcRealSize"] def:NO] == YES) {
@@ -256,56 +248,9 @@
             tempSize.size.height = label.frame.size.height;
             tempFrame.size.width = label.frame.size.width;
             tempFrame.size.height = label.frame.size.height;
-            
-            CGFloat leftSpacing = 0;
-            CGFloat rightSpacing = 0;
-            CGFloat topSpacing = 0;
-            CGFloat bottomSpacing = 0;
 
             [(TiViewProxy *)[self proxy] layoutProperties]->width = TiDimensionDip(tempSize.size.width);
             [(TiViewProxy *)[self proxy] layoutProperties]->height = TiDimensionDip(tempSize.size.height);
-
-            id widthValue = [parent valueForKey:@"width"];
-            id heightValue = [parent valueForKey:@"height"];
-
-            TiDimension width = [TiUtils dimensionValue:widthValue];
-            TiDimension height = [TiUtils dimensionValue:heightValue];
-            if ([parent valueForKey:@"top"]) {
-                id topValue = [parent valueForKey:@"top"];
-                TiDimension top = [TiUtils dimensionValue:topValue];
-
-                if (TiDimensionIsDip(top)) {
-                    topSpacing = top.value;
-                }
-            }
-
-            if ([parent valueForKey:@"bottom"]) {
-                id bottomValue = [parent valueForKey:@"bottom"];
-                TiDimension bottom = [TiUtils dimensionValue:bottomValue];
-
-                if (TiDimensionIsDip(bottom)) {
-                    bottomSpacing = bottom.value;
-                }
-            }
-
-
-            if ([parent valueForKey:@"left"]) {
-                id leftValue = [parent valueForKey:@"left"];
-                TiDimension left = [TiUtils dimensionValue:leftValue];
-
-                if (TiDimensionIsDip(left)) {
-                    leftSpacing = left.value;
-                }
-            }
-
-            if ([parent valueForKey:@"right"]) {
-                id rightValue = [parent valueForKey:@"right"];
-                TiDimension right = [TiUtils dimensionValue:rightValue];
-
-                if (TiDimensionIsDip(right)) {
-                    rightSpacing = right.value;
-                }
-            }
 
             [super frameSizeChanged:tempFrame bounds:tempSize];
             [TiUtils setView:label positionRect:tempSize];
@@ -325,7 +270,7 @@
         [super frameSizeChanged:frame bounds:bounds];
         [TiUtils setView:label positionRect:tempSize];
     #endif
-    
+
 }
 
 - (UILabel *)label
@@ -364,8 +309,8 @@
       if ([[self proxy] valueForUndefinedKey:@"minimumFontSize"]){
           minFontSize = [TiUtils floatValue:[[self proxy] valueForKey:@"minimumFontSize"]];
       }
-     
-      
+
+
       if (minFontSize < 4) { // Beholden to 'most minimum' font size
         [label setAdjustsFontSizeToFitWidth:NO];
         [label setMinimumScaleFactor:0.0];
@@ -624,11 +569,11 @@
 
 - (void)setEllipsize_:(id)value
 {
-  ENSURE_SINGLE_ARG(value, NSNumber);
   if ([[TiUtils stringValue:value] isEqualToString:@"true"]) {
     [[self label] setLineBreakMode:NSLineBreakByTruncatingTail];
     return;
   }
+  ENSURE_SINGLE_ARG(value, NSNumber);
   [[self label] setLineBreakMode:[TiUtils intValue:value]];
 }
 
@@ -676,50 +621,33 @@
 
 - (void)setAttributedString_:(id)arg
 {
-    
-  ENSURE_SINGLE_ARG(arg, TiUIAttributedStringProxy);
+    ENSURE_SINGLE_ARG(arg, TiUIAttributedStringProxy);
   [[self proxy] replaceValue:arg forKey:@"attributedString" notification:NO];
   [[self label] setAttributedText:[arg attributedString]];
-  
-    id backgroundColor = [self.proxy valueForUndefinedKey:@"backgroundColor"];
-    UIColor * backgroundColorValue = nil;
-    if (backgroundColor != nil) {
-        UIColor * backgroundColorValue = [[TiUtils colorValue:backgroundColor] _color];
-    }
-    if (backgroundColorValue != nil) {
-        [self label].backgroundColor = backgroundColorValue;
-        self.backgroundColor = backgroundColorValue;
-        super.backgroundColor = backgroundColorValue;
-    }
-    self.opaque = YES;
 
+    id backgroundColor = [self.proxy valueForUndefinedKey:@"backgroundColor"];
+    if (backgroundColor != nil) {
+        UIColor *backgroundColorValue = [[TiUtils colorValue:backgroundColor] _color];
+        if (backgroundColorValue != nil) {
+            [self label].backgroundColor = backgroundColorValue;
+            self.backgroundColor = backgroundColorValue;
+            super.backgroundColor = backgroundColorValue;
+        }
+    }
     [self label].opaque = YES;
     self.opaque = YES;
-   
+
   [self padLabel];
   [(TiViewProxy *)[self proxy] contentsWillChange];
-  
+
 }
 -(void)setBackgroundColor_:(id)color
 {
-    if ([color isKindOfClass:[UIColor class]])
-    {
-        [self label].backgroundColor = color;
-        super.backgroundColor = color;
-        [self label].opaque = YES;
-        self.opaque = YES;
-    }
-    else
-    {
-        //TiColor *ticolor = [TiUtils colorValue:color];
-        UIColor * aColor =[[TiUtils colorValue:color] _color];
-
-        [self label].backgroundColor = aColor;
-        super.backgroundColor = aColor;
-
-        [self label].opaque = YES;
-        self.opaque = YES;
-    }
+    UIColor *aColor = [color isKindOfClass:[UIColor class]] ? color : [[TiUtils colorValue:color] _color];
+    [self label].backgroundColor = aColor;
+    super.backgroundColor = aColor;
+    [self label].opaque = YES;
+    self.opaque = YES;
 }
 
 - (void)setBackgroundPaddingLeft_:(id)left

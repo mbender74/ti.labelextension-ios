@@ -104,7 +104,7 @@
         paragraphStyle.lineHeightMultiple = [TiUtils floatValue:objectValue];
       } else if ([key isEqualToString:@"hyphenationFactor"]) {
         paragraphStyle.hyphenationFactor = (float)[TiUtils floatValue:objectValue];
-      } else if ([TiUtils isIOSVersionOrGreater:@"9.0"] && [key isEqualToString:@"allowsDefaultTighteningForTruncation"]) {
+      } else if ([key isEqualToString:@"allowsDefaultTighteningForTruncation"]) {
         paragraphStyle.allowsDefaultTighteningForTruncation = [TiUtils boolValue:objectValue];
       } else {
         DebugLog(@"[WARN] Ti.UI.ATTRIBUTE_PARAGRAPH_STYLE - Unsupported property %@", key);
@@ -246,10 +246,6 @@
   [_attributedString addAttribute:attrName value:attrValue range:rangeValue];
 }
 
-- (void)dealloc
-{
-}
-
 - (id)attributes
 {
   return attributes;
@@ -262,7 +258,7 @@
   NSArray *range = [args valueForKey:@"range"];
   NSRange rangeValue = NSMakeRange([TiUtils intValue:[range objectAtIndex:0]], [TiUtils intValue:[range objectAtIndex:1]]);
 
-  [_attributedString addAttribute:NSUnderlineStyleAttributeName value:[NSNumber numberWithInt:NSUnderlineStyleSingle] range:rangeValue];
+  [_attributedString addAttribute:NSUnderlineStyleAttributeName value:@(NSUnderlineStyleSingle) range:rangeValue];
   [_attributedString addAttribute:NSUnderlineColorAttributeName value:[UIColor blueColor] range:rangeValue];
   [_attributedString addAttribute:NSForegroundColorAttributeName value:[UIColor blueColor] range:rangeValue];
 
@@ -276,12 +272,9 @@
 
 - (NSString *)getLink:(NSUInteger)arg
 {
-  float tempIndx = ([[NSNumber numberWithUnsignedInteger:arg] floatValue]);
-
   for (NSString *key in _urls) {
     NSRange range = NSRangeFromString(key);
-    CGFloat tempLenght = range.location + range.length;
-    if (range.location <= tempIndx && tempLenght >= tempIndx) {
+    if (range.location <= arg && (range.location + range.length) >= arg) {
       return [_urls valueForKey:key];
     }
   }
@@ -312,4 +305,3 @@
 }
 
 @end
-
