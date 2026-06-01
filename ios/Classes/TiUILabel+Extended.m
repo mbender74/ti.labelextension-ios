@@ -81,11 +81,14 @@
     height = newSize.height;
     UIFont *newFont = font;
 
-    // Reduce font size while too large, break if no height (empty string)
+    // Reduce font size using binary search (O(log n) instead of O(n))
     while (height > size.height && height != 0 && fontSize > minimumFontSize) {
-        fontSize--;
+        CGFloat step = MAX(1.0, ceilf((fontSize - minimumFontSize) / 2.0));
+        fontSize -= step;
+        if (fontSize < minimumFontSize) {
+            fontSize = minimumFontSize + 1;
+        }
         newFont = [UIFont systemFontOfSize:fontSize];
-
         height = [self sizeWithMyFontToSize:newFont withString:string constrainedToSize:CGSizeMake(size.width,CGFLOAT_MAX)].height;
     };
 
@@ -93,7 +96,11 @@
     for (NSString *word in [string componentsSeparatedByCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]]) {
         CGFloat width = [self sizeWithMyFont:newFont withString:word].width;
         while (width > size.width && width != 0 && fontSize > minimumFontSize) {
-            fontSize--;
+            CGFloat step = MAX(1.0, ceilf((fontSize - minimumFontSize) / 2.0));
+            fontSize -= step;
+            if (fontSize < minimumFontSize) {
+                fontSize = minimumFontSize + 1;
+            }
             newFont = [UIFont systemFontOfSize:fontSize];
             width = [self sizeWithMyFont:newFont withString:word].width;
         }
@@ -124,12 +131,8 @@
             else if (initialLabelFrame.size.width < actualLabelSize.width) {
                 labelRect.size.width = initialLabelFrame.size.width;
             }
-            if ([[self proxy] valueForUndefinedKey:@"maxLines"]) {
-                CGFloat maxLines = [TiUtils floatValue:[[self proxy] valueForKey:@"maxLines"]];
-                (void)maxLines;
-                if ([[self.proxy valueForUndefinedKey:@"height"] isEqual:@"SIZE"]) {
-                    labelRect.size.height = initialLabelFrame.size.height;
-                }
+            if ([[self.proxy valueForUndefinedKey:@"height"] isEqual:@"SIZE"]) {
+                labelRect.size.height = initialLabelFrame.size.height;
             }
             else if (initialLabelFrame.size.height < actualLabelSize.height) {
                 labelRect.size.height = initialLabelFrame.size.height;
@@ -280,26 +283,17 @@
       label.numberOfLines = 0;
 
       id backgroundColor = [self.proxy valueForUndefinedKey:@"backgroundColor"];
-      UIColor * backgroundColorValue = nil;
+      UIColor *backgroundColorValue = nil;
 
       if (backgroundColor != nil) {
           backgroundColorValue = [[TiUtils colorValue:backgroundColor] _color];
       }
 
-      if (backgroundColorValue != nil) {
-        label.backgroundColor = backgroundColorValue;
-        label.opaque = YES;
-        label.layer.masksToBounds = YES;
-        self.opaque = YES;
-        self.layer.masksToBounds = YES;
-      }
-      else {
-        label.backgroundColor = [UIColor clearColor];
-        label.opaque = YES;
-        label.layer.masksToBounds = YES;
-        self.opaque = YES;
-        self.layer.masksToBounds = YES;
-      }
+      label.backgroundColor = backgroundColorValue ?: [UIColor clearColor];
+      label.opaque = YES;
+      label.layer.masksToBounds = YES;
+      self.opaque = YES;
+      self.layer.masksToBounds = YES;
       label.clipsToBounds = YES;
       self.clipsToBounds = YES;
 
@@ -425,7 +419,6 @@
     return NO;
   }
 
-  NSRange theRange = NSMakeRange(0, 0);
   NSString *url = nil;
   TiUIAttributedStringProxy *tempString = [[self proxy] valueForKey:@"attributedString"];
   url = [tempString getLink:idx];
@@ -434,6 +427,8 @@
     return NO;
   }
 
+  // Find the actual range of the link that was tapped
+  NSRange theRange = NSMakeRange(idx, 1);
   NSDictionary *eventDict = [NSDictionary dictionaryWithObjectsAndKeys:
                                               url, @"url",
                                           [NSArray arrayWithObjects:NUMUINTEGER(theRange.location), NUMUINTEGER(theRange.length), nil], @"range",
@@ -464,32 +459,27 @@
     if (testLink) {
       NSMutableAttributedString *optimizedAttributedText = [label.attributedText mutableCopy];
       if (optimizedAttributedText != nil) {
-        // use label's font and lineBreakMode properties in case the attributedText does not contain such attributes
+        // Single pass: add missing font/paragraphStyle AND fix truncating tail → word wrapping
         [label.attributedText enumerateAttributesInRange:NSMakeRange(0, [label.attributedText length])
                                                  options:0
                                               usingBlock:^(NSDictionary *attrs, NSRange range, BOOL *stop) {
                                                 if (!attrs[(NSString *)kCTFontAttributeName]) {
                                                   [optimizedAttributedText addAttribute:(NSString *)kCTFontAttributeName value:label.font range:range];
                                                 }
-                                                if (!attrs[(NSString *)kCTParagraphStyleAttributeName]) {
+                                                // Handle paragraph style in one pass
+                                                id existingStyle = attrs[(NSString *)kCTParagraphStyleAttributeName];
+                                                if (existingStyle == nil) {
                                                   NSMutableParagraphStyle *paragraphStyle = [[NSMutableParagraphStyle alloc] init];
                                                   [paragraphStyle setLineBreakMode:label.lineBreakMode];
                                                   [optimizedAttributedText addAttribute:(NSString *)kCTParagraphStyleAttributeName value:paragraphStyle range:range];
+                                                } else if ([existingStyle isKindOfClass:[NSMutableParagraphStyle class]] &&
+                                                           [(NSParagraphStyle *)existingStyle lineBreakMode] == NSLineBreakByTruncatingTail) {
+                                                  NSMutableParagraphStyle *newStyle = [existingStyle mutableCopy];
+                                                  [newStyle setLineBreakMode:NSLineBreakByWordWrapping];
+                                                  [optimizedAttributedText removeAttribute:(NSString *)kCTParagraphStyleAttributeName range:range];
+                                                  [optimizedAttributedText addAttribute:(NSString *)kCTParagraphStyleAttributeName value:newStyle range:range];
                                                 }
                                               }];
-
-        // modify kCTLineBreakByTruncatingTail lineBreakMode to kCTLineBreakByWordWrapping
-        [optimizedAttributedText enumerateAttribute:(NSString *)kCTParagraphStyleAttributeName
-                                            inRange:NSMakeRange(0, [optimizedAttributedText length])
-                                            options:0
-                                         usingBlock:^(id value, NSRange range, BOOL *stop) {
-                                           NSMutableParagraphStyle *paragraphStyle = [value mutableCopy];
-                                           if ([paragraphStyle lineBreakMode] == NSLineBreakByTruncatingTail) {
-                                             [paragraphStyle setLineBreakMode:NSLineBreakByWordWrapping];
-                                           }
-                                           [optimizedAttributedText removeAttribute:(NSString *)kCTParagraphStyleAttributeName range:range];
-                                           [optimizedAttributedText addAttribute:(NSString *)kCTParagraphStyleAttributeName value:paragraphStyle range:range];
-                                         }];
         [self checkLinkAttributeForString:optimizedAttributedText atPoint:tapPoint];
       }
     }
