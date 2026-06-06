@@ -6,10 +6,10 @@ version: 1.1.2
 apiversion: 2
 architectures: arm64 x86_64
 mac: true
-description: ti.labelextension
-author: Your Name
-license: Specify your license
-copyright: Copyright (c) 2022 by Your Company
+description: High-performance UILabel extension for Titanium iOS — eliminates blended layers, caches measurements, improves scroll performance
+author: Marc Bender
+license: Apache Public License 2.0
+copyright: Copyright (c) 2022-2025 by Marc Bender
 
 # these should not be edited
 name: ti.labelextension
