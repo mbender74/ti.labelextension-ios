@@ -359,7 +359,7 @@ This can happen with `calcRealSize: true` and very long text. Try:
 
 ## License
 
-Copyright © 2022-2025. All rights reserved.
+Copyright © 2022-2026. All rights reserved.
 
 ---
 

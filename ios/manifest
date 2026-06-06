@@ -9,7 +9,7 @@ mac: true
 description: High-performance UILabel extension for Titanium iOS — eliminates blended layers, caches measurements, improves scroll performance
 author: Marc Bender
 license: Apache Public License 2.0
-copyright: Copyright (c) 2022-2025 by Marc Bender
+copyright: Copyright (c) 2022-2026 by Marc Bender
 
 # these should not be edited
 name: ti.labelextension
