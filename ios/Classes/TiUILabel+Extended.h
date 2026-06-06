@@ -17,7 +17,7 @@
 @interface TiUILabel (Extended)
 
 // Performance caches (backing ivars declared in implementation)
-@property (nonatomic, strong) NSCache<NSString *, NSNumber *> *measurementCache;
+@property (nonatomic, strong) NSCache<NSString *, NSValue *> *measurementCache;
 @property (nonatomic, strong) NSLayoutManager *cachedLayoutManager;
 @property (nonatomic, strong) NSTextContainer *cachedTextContainer;
 @property (nonatomic, strong) NSTextStorage *cachedTextStorage;

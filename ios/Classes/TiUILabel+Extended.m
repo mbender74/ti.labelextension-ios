@@ -20,7 +20,7 @@ static char const kNeedsParentRefreshKey;
 
 @implementation TiUILabel (Extended)
 
-- (NSCache<NSString *, NSNumber *> *)measurementCache {
+- (NSCache<NSString *, NSValue *> *)measurementCache {
     NSCache *cache = objc_getAssociatedObject(self, &kMeasurementCacheKey);
     if (!cache) {
         cache = [[NSCache alloc] init];
@@ -30,7 +30,7 @@ static char const kNeedsParentRefreshKey;
     return cache;
 }
 
-- (void)setMeasurementCache:(NSCache<NSString *, NSNumber *> *)cache {
+- (void)setMeasurementCache:(NSCache<NSString *, NSValue *> *)cache {
     objc_setAssociatedObject(self, &kMeasurementCacheKey, cache, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
 }
 
@@ -100,9 +100,9 @@ static char const kNeedsParentRefreshKey;
 
   // Try cache first
   NSString *cacheKey = [self measurementCacheKeyForWidth:suggestedWidth];
-  NSNumber *cachedResult = [self.measurementCache objectForKey:cacheKey];
+  NSValue *cachedResult = [self.measurementCache objectForKey:cacheKey];
   if (cachedResult) {
-      CGSize size = CGSizeFromString([cachedResult description]);
+      CGSize size = [cachedResult CGSizeValue];
       if (shadowOffset.width > 0) {
           size.width += shadowOffset.width + 10;
       }
@@ -118,8 +118,7 @@ static char const kNeedsParentRefreshKey;
   }
 
   // Cache result
-  [self.measurementCache setObject:[NSNumber numberWithDouble:size.width] 
-                           forKey:cacheKey];
+  [self.measurementCache setObject:[NSValue valueWithCGSize:size] forKey:cacheKey];
 
   return size;
 }
@@ -367,10 +366,9 @@ static char const kNeedsParentRefreshKey;
             [super frameSizeChanged:tempFrame bounds:tempSize];
             [TiUtils setView:label positionRect:tempSize];
 
-            // Batch parent refresh to avoid O(N^2) layout in lists
-            self.needsParentRefresh = YES;
             if (parent) {
                 [parent refreshView:nil];
+                self.needsParentRefresh = NO;  // Reset after refresh
             }
 
         }
@@ -396,10 +394,6 @@ static char const kNeedsParentRefreshKey;
       label = [[UILabel alloc] initWithFrame:CGRectZero];
       label.numberOfLines = 0;
 
-      // Init performance caches
-      self.measurementCache = [[NSCache alloc] init];
-      self.measurementCache.countLimit = 100; // Limit cache size
-      
       id backgroundColor = [self.proxy valueForUndefinedKey:@"backgroundColor"];
       UIColor *backgroundColorValue = nil;
 
@@ -510,16 +504,27 @@ static char const kNeedsParentRefreshKey;
 
 - (NSTextContainer *)currentTextContainer
 {
-    // Lazy init + cache Text Kit stack
-    if (!self.cachedLayoutManager || [self shouldInvalidateTextKitCache]) {
+    BOOL needsRebuild = [self shouldInvalidateTextKitCache];
+    
+    if (needsRebuild) {
         [self invalidateTextKitCache];
-        
+    }
+    
+    // Lazy init on first call
+    if (!self.cachedLayoutManager) {
         self.cachedTextContainer = [[NSTextContainer alloc] initWithSize:self.label.bounds.size];
         self.cachedTextContainer.lineFragmentPadding = 0;
         self.cachedTextContainer.maximumNumberOfLines = (NSUInteger)self.label.numberOfLines;
         self.cachedTextContainer.lineBreakMode = self.label.lineBreakMode;
-        
         self.cachedLayoutManager = [NSLayoutManager new];
+    }
+    else if (needsRebuild) {
+        // Recycle existing objects instead of reallocating
+        if (self.cachedTextContainer) {
+            self.cachedTextContainer.size = self.label.bounds.size;
+            self.cachedTextContainer.maximumNumberOfLines = (NSUInteger)self.label.numberOfLines;
+            self.cachedTextContainer.lineBreakMode = self.label.lineBreakMode;
+        }
     }
     
     return self.cachedTextContainer;
@@ -622,13 +627,13 @@ static char const kNeedsParentRefreshKey;
   } else {
     [self.proxy fireEvent:@"singletap" withObject:event];
     if (testLink) {
-      // Only create mutableCopy if needed (check if attributes are complete)
-      BOOL needsOptimization = ([label.attributedText length] > 0);
-      if (needsOptimization) {
-        NSMutableAttributedString *optimizedAttributedText = [label.attributedText mutableCopy];
+      // Only optimize if there's actual text (skip empty labels)
+      NSAttributedString *attributedText = label.attributedText;
+      if (attributedText.length > 0) {
+        NSMutableAttributedString *optimizedAttributedText = [attributedText mutableCopy];
         
         // Single pass: add missing font/paragraphStyle AND fix truncating tail → word wrapping
-        [label.attributedText enumerateAttributesInRange:NSMakeRange(0, [label.attributedText length])
+        [attributedText enumerateAttributesInRange:NSMakeRange(0, attributedText.length)
                                                  options:0
                                               usingBlock:^(NSDictionary *attrs, NSRange range, BOOL *stop) {
                                                 if (!attrs[(NSString *)kCTFontAttributeName]) {
@@ -784,9 +789,10 @@ static char const kNeedsParentRefreshKey;
 
 - (void)setAttributedString_:(id)arg
 {
-    ENSURE_SINGLE_ARG(arg, TiUIAttributedStringProxy);
-  [[self proxy] replaceValue:arg forKey:@"attributedString" notification:NO];
-  [[self label] setAttributedText:[arg attributedString]];
+  TiUIAttributedStringProxy *attributedStringProxy = [TiUIAttributedStringProxy fromProperties:arg];
+  if (attributedStringProxy) {
+    [[self proxy] replaceValue:attributedStringProxy forKey:@"attributedString" notification:NO];
+    [[self label] setAttributedText:[attributedStringProxy attributedString]];
 
     id backgroundColor = [self.proxy valueForUndefinedKey:@"backgroundColor"];
     if (backgroundColor != nil) {
@@ -800,11 +806,12 @@ static char const kNeedsParentRefreshKey;
     [self label].opaque = YES;
     self.opaque = YES;
 
-  [self padLabel];
-  [(TiViewProxy *)[self proxy] contentsWillChange];
-
+    [self padLabel];
+    [(TiViewProxy *)[self proxy] contentsWillChange];
+  }
 }
--(void)setBackgroundColor_:(id)color
+
+- (void)setBackgroundColor_:(id)color
 {
     UIColor *aColor = [color isKindOfClass:[UIColor class]] ? color : [[TiUtils colorValue:color] _color];
     [self label].backgroundColor = aColor;
