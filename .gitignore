@@ -1,4 +1,5 @@
 .DS_Store
+.pi
 ios/*.zip
 ios/dist
 ios/build
