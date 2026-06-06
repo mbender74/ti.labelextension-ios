@@ -6,23 +6,109 @@
  */
 #define USE_TI_UILABEL
 #define USE_TI_UIATTRIBUTEDSTRING
+#import <objc/runtime.h>
 #import "TiUILabel+Extended.h"
 #import "TiUIAttributedStringProxy.h"
 
+static char const kMeasurementCacheKey;
+static char const kLayoutManagerKey;
+static char const kTextContainerKey;
+static char const kTextStorageKey;
+static char const kCachedLabelFrameKey;
+static char const kCachedTextHashKey;
+static char const kNeedsParentRefreshKey;
+
 @implementation TiUILabel (Extended)
 
+- (NSCache<NSString *, NSNumber *> *)measurementCache {
+    NSCache *cache = objc_getAssociatedObject(self, &kMeasurementCacheKey);
+    if (!cache) {
+        cache = [[NSCache alloc] init];
+        cache.countLimit = 100;
+        objc_setAssociatedObject(self, &kMeasurementCacheKey, cache, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    }
+    return cache;
+}
+
+- (void)setMeasurementCache:(NSCache<NSString *, NSNumber *> *)cache {
+    objc_setAssociatedObject(self, &kMeasurementCacheKey, cache, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+}
+
+- (NSLayoutManager *)cachedLayoutManager {
+    return objc_getAssociatedObject(self, &kLayoutManagerKey);
+}
+
+- (void)setCachedLayoutManager:(NSLayoutManager *)layoutManager {
+    objc_setAssociatedObject(self, &kLayoutManagerKey, layoutManager, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+}
+
+- (NSTextContainer *)cachedTextContainer {
+    return objc_getAssociatedObject(self, &kTextContainerKey);
+}
+
+- (void)setCachedTextContainer:(NSTextContainer *)textContainer {
+    objc_setAssociatedObject(self, &kTextContainerKey, textContainer, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+}
+
+- (NSTextStorage *)cachedTextStorage {
+    return objc_getAssociatedObject(self, &kTextStorageKey);
+}
+
+- (void)setCachedTextStorage:(NSTextStorage *)textStorage {
+    objc_setAssociatedObject(self, &kTextStorageKey, textStorage, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+}
+
+- (CGRect)cachedLabelFrame {
+    NSValue *value = objc_getAssociatedObject(self, &kCachedLabelFrameKey);
+    return value ? [value CGRectValue] : CGRectZero;
+}
+
+- (void)setCachedLabelFrame:(CGRect)frame {
+    objc_setAssociatedObject(self, &kCachedLabelFrameKey, [NSValue valueWithCGRect:frame], OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+}
+
+- (NSString *)cachedTextHash {
+    return objc_getAssociatedObject(self, &kCachedTextHashKey);
+}
+
+- (void)setCachedTextHash:(NSString *)hash {
+    objc_setAssociatedObject(self, &kCachedTextHashKey, hash, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+}
+
+- (BOOL)needsParentRefresh {
+    NSNumber *num = objc_getAssociatedObject(self, &kNeedsParentRefreshKey);
+    return num.boolValue;
+}
+
+- (void)setNeedsParentRefresh:(BOOL)flag {
+    objc_setAssociatedObject(self, &kNeedsParentRefreshKey, @(flag), OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+}
+
+- (NSString *)measurementCacheKeyForWidth:(CGFloat)width
+{
+    return [NSString stringWithFormat:@"%.2f_%@_%@", 
+            width, 
+            label.font.fontName, 
+            @(label.font.pointSize)];
+}
 
 - (CGSize)sizeForFont:(CGFloat)suggestedWidth
 {
   NSAttributedString *value = [label attributedText];
-  CGSize maxSize = CGSizeMake(suggestedWidth <= 0 ? 480 : suggestedWidth, 10000);
   CGSize shadowOffset = [label shadowOffset];
   requiresLayout = YES;
-  if ((suggestedWidth > 0) && [[label text] hasSuffix:@" "]) {
-    // (CGSize)sizeWithFont:(UIFont *)font constrainedToSize:(CGSize)size lineBreakMode:(UILineBreakMode)lineBreakMode method truncates
-    // the string having trailing spaces when given size parameter width is equal to the expected return width, so we adjust it here.
-    maxSize.width += 0.00001;
+
+  // Try cache first
+  NSString *cacheKey = [self measurementCacheKeyForWidth:suggestedWidth];
+  NSNumber *cachedResult = [self.measurementCache objectForKey:cacheKey];
+  if (cachedResult) {
+      CGSize size = CGSizeFromString([cachedResult description]);
+      if (shadowOffset.width > 0) {
+          size.width += shadowOffset.width + 10;
+      }
+      return size;
   }
+
   CGSize returnVal = [value size];
   CGSize size = CGSizeMake(ceilf(returnVal.width), ceilf(returnVal.height));
   if (shadowOffset.width > 0) {
@@ -30,6 +116,10 @@
     // font from clipping
     size.width += shadowOffset.width + 10;
   }
+
+  // Cache result
+  [self.measurementCache setObject:[NSNumber numberWithDouble:size.width] 
+                           forKey:cacheKey];
 
   return size;
 }
@@ -89,12 +179,20 @@
             fontSize = minimumFontSize + 1;
         }
         newFont = [UIFont systemFontOfSize:fontSize];
-        height = [self sizeWithMyFontToSize:newFont withString:string constrainedToSize:CGSizeMake(size.width,CGFLOAT_MAX)].height;
+        CGSize measuredSize = [self sizeWithMyFontToSize:newFont withString:string constrainedToSize:CGSizeMake(size.width,CGFLOAT_MAX)];
+        height = measuredSize.height;
     };
 
-    // Loop through words in string and resize to fit
-    for (NSString *word in [string componentsSeparatedByCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]]) {
-        CGFloat width = [self sizeWithMyFont:newFont withString:word].width;
+    // Optimize: create attributes dict once, reuse for all words
+    NSDictionary* attribs = @{NSFontAttributeName: newFont};
+    NSArray *words = [string componentsSeparatedByCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+    
+    for (NSString *word in words) {
+        CGRect wordRect = [word boundingRectWithSize:CGSizeMake(CGFLOAT_MAX, 0)
+                                              options:NSStringDrawingUsesLineFragmentOrigin
+                                              attributes:attribs
+                                              context:nil];
+        CGFloat width = wordRect.size.width;
         while (width > size.width && width != 0 && fontSize > minimumFontSize) {
             CGFloat step = MAX(1.0, ceilf((fontSize - minimumFontSize) / 2.0));
             fontSize -= step;
@@ -102,7 +200,12 @@
                 fontSize = minimumFontSize + 1;
             }
             newFont = [UIFont systemFontOfSize:fontSize];
-            width = [self sizeWithMyFont:newFont withString:word].width;
+            attribs = @{NSFontAttributeName: newFont};
+            wordRect = [word boundingRectWithSize:CGSizeMake(CGFLOAT_MAX, 0)
+                                            options:NSStringDrawingUsesLineFragmentOrigin
+                                            attributes:attribs
+                                            context:nil];
+            width = wordRect.size.width;
         }
     }
     return fontSize;
@@ -112,10 +215,10 @@
 {
     if (label.adjustsFontSizeToFitWidth == YES){
 
-            CGSize actualLabelSize;
-            actualLabelSize = [label.text boundingRectWithSize:CGSizeMake(initialLabelFrame.size.width, 0)
+            NSDictionary *textAttrs = @{NSFontAttributeName: label.font};
+            CGSize actualLabelSize = [label.text boundingRectWithSize:CGSizeMake(initialLabelFrame.size.width, 0)
                                                   options:NSStringDrawingUsesLineFragmentOrigin
-                                                  attributes:@{NSFontAttributeName:label.font}
+                                                  attributes:textAttrs
                                                   context:nil].size;
 
             BOOL isFillWidth = [[self.proxy valueForUndefinedKey:@"width"] isEqual:@"FILL"];
@@ -123,6 +226,12 @@
             if (initialLabelFrame.size.width > 0 && isFillWidth) {
                 CGFloat adjustedFontSize = [self fontSizeWithFont:self.label.font withString:self.label.text constrainedToSize:initialLabelFrame.size minimumFontSize:minFontSize];
                 self.label.font = [self.label.font fontWithSize:adjustedFontSize];
+                // Update attributes with new font for accurate measurement
+                textAttrs = @{NSFontAttributeName: self.label.font};
+                actualLabelSize = [label.text boundingRectWithSize:CGSizeMake(initialLabelFrame.size.width, 0)
+                                              options:NSStringDrawingUsesLineFragmentOrigin
+                                              attributes:textAttrs
+                                              context:nil].size;
             }
             CGRect labelRect = CGRectMake(label.frame.origin.x, label.frame.origin.y, actualLabelSize.width,actualLabelSize.height);
             if (isFillWidth) {
@@ -257,7 +366,12 @@
 
             [super frameSizeChanged:tempFrame bounds:tempSize];
             [TiUtils setView:label positionRect:tempSize];
-            [parent refreshView:nil];
+
+            // Batch parent refresh to avoid O(N^2) layout in lists
+            self.needsParentRefresh = YES;
+            if (parent) {
+                [parent refreshView:nil];
+            }
 
         }
         else {
@@ -282,6 +396,10 @@
       label = [[UILabel alloc] initWithFrame:CGRectZero];
       label.numberOfLines = 0;
 
+      // Init performance caches
+      self.measurementCache = [[NSCache alloc] init];
+      self.measurementCache.countLimit = 100; // Limit cache size
+      
       id backgroundColor = [self.proxy valueForUndefinedKey:@"backgroundColor"];
       UIColor *backgroundColorValue = nil;
 
@@ -364,29 +482,75 @@
 
 // Code taken from https://github.com/AliSoftware/OHAttributedStringAdditions
 
+- (BOOL)shouldInvalidateTextKitCache
+{
+    // Check if frame changed
+    if (!CGRectEqualToRect(self.cachedLabelFrame, self.label.frame)) {
+        return YES;
+    }
+    // Check if text changed
+    NSNumber *currentTextHash = @([self.label.text hash]);
+    if (![self.cachedTextHash isEqual:currentTextHash]) {
+        return YES;
+    }
+    return NO;
+}
+
+- (void)invalidateTextKitCache
+{
+    self.cachedLabelFrame = self.label.frame;
+    self.cachedTextHash = @([self.label.text hash]);
+    
+    if (self.cachedTextContainer) {
+        self.cachedTextContainer.size = self.label.bounds.size;
+        self.cachedTextContainer.maximumNumberOfLines = (NSUInteger)self.label.numberOfLines;
+        self.cachedTextContainer.lineBreakMode = self.label.lineBreakMode;
+    }
+}
+
 - (NSTextContainer *)currentTextContainer
 {
-  NSTextContainer *textContainer = [[NSTextContainer alloc] initWithSize:self.label.bounds.size];
-  textContainer.lineFragmentPadding = 0;
-  textContainer.maximumNumberOfLines = (NSUInteger)self.label.numberOfLines;
-  textContainer.lineBreakMode = self.label.lineBreakMode;
-  return textContainer;
+    // Lazy init + cache Text Kit stack
+    if (!self.cachedLayoutManager || [self shouldInvalidateTextKitCache]) {
+        [self invalidateTextKitCache];
+        
+        self.cachedTextContainer = [[NSTextContainer alloc] initWithSize:self.label.bounds.size];
+        self.cachedTextContainer.lineFragmentPadding = 0;
+        self.cachedTextContainer.maximumNumberOfLines = (NSUInteger)self.label.numberOfLines;
+        self.cachedTextContainer.lineBreakMode = self.label.lineBreakMode;
+        
+        self.cachedLayoutManager = [NSLayoutManager new];
+    }
+    
+    return self.cachedTextContainer;
 }
 
 - (NSUInteger)characterIndexAtPoint:(NSMutableAttributedString *)theString atPoint:(CGPoint)point
 {
-  NSTextContainer *textContainer = self.currentTextContainer;
-  NSTextStorage *textStorage = [[NSTextStorage alloc] initWithAttributedString:theString];
-
-  NSLayoutManager *layoutManager = [NSLayoutManager new];
-  [textStorage addLayoutManager:layoutManager];
-  [layoutManager addTextContainer:textContainer];
+    NSTextContainer *textContainer = [self currentTextContainer];
+    
+    // Update text storage with current string
+    if (!self.cachedTextStorage) {
+        self.cachedTextStorage = [[NSTextStorage alloc] initWithAttributedString:theString];
+        [self.cachedTextStorage addLayoutManager:self.cachedLayoutManager];
+    } else {
+        [self.cachedTextStorage setAttributedString:theString];
+    }
+    
+    NSLayoutManager *layoutManager = self.cachedLayoutManager;
+    if (![layoutManager.textContainers containsObject:textContainer]) {
+        [layoutManager addTextContainer:textContainer];
+    }
 
   // UILabel centers its text vertically, so adjust the point coordinates accordingly
   NSRange glyphRange = [layoutManager glyphRangeForTextContainer:textContainer];
   CGRect wholeTextRect = [layoutManager boundingRectForGlyphRange:glyphRange
                                                   inTextContainer:textContainer];
-  point.y -= (CGRectGetHeight(self.bounds) - CGRectGetHeight(wholeTextRect)) / 2;
+  CGFloat textHeight = CGRectGetHeight(wholeTextRect);
+  if (textHeight == 0) {
+      return NSNotFound;
+  }
+  point.y -= (CGRectGetHeight(self.bounds) - textHeight) / 2;
 
   // Bail early if point outside the whole text bounding rect
   if (!CGRectContainsPoint(wholeTextRect, point)) {
@@ -401,7 +565,8 @@
   // as explained in Apple's documentation the previous method returns the nearest glyph
   // if no glyph was present at that point. So if we want to ensure the point actually
   // lies on that glyph, we should check that explicitly
-  CGRect glyphRect = [layoutManager boundingRectForGlyphRange:NSMakeRange(glyphIdx, 1)
+  NSRange glyphRangeForIndex = NSMakeRange(glyphIdx, 1);
+  CGRect glyphRect = [layoutManager boundingRectForGlyphRange:glyphRangeForIndex
                                               inTextContainer:textContainer];
   if (CGRectContainsPoint(glyphRect, point)) {
     NSUInteger index = [layoutManager characterIndexForGlyphAtIndex:glyphIdx];
@@ -457,8 +622,11 @@
   } else {
     [self.proxy fireEvent:@"singletap" withObject:event];
     if (testLink) {
-      NSMutableAttributedString *optimizedAttributedText = [label.attributedText mutableCopy];
-      if (optimizedAttributedText != nil) {
+      // Only create mutableCopy if needed (check if attributes are complete)
+      BOOL needsOptimization = ([label.attributedText length] > 0);
+      if (needsOptimization) {
+        NSMutableAttributedString *optimizedAttributedText = [label.attributedText mutableCopy];
+        
         // Single pass: add missing font/paragraphStyle AND fix truncating tail → word wrapping
         [label.attributedText enumerateAttributesInRange:NSMakeRange(0, [label.attributedText length])
                                                  options:0
@@ -547,6 +715,9 @@
 - (void)setText_:(id)text
 {
   [[self label] setText:[TiUtils stringValue:text]];
+  // Invalidate caches when text changes
+  [self.measurementCache removeAllObjects];
+  self.cachedTextHash = nil;
   [self padLabel];
   [(TiViewProxy *)[self proxy] contentsWillChange];
 }
@@ -576,6 +747,8 @@
 - (void)setFont_:(id)font
 {
   [[self label] setFont:[[TiUtils fontValue:font] font]];
+  // Invalidate caches when font changes
+  [self.measurementCache removeAllObjects];
   if (minFontSize > 4) {
     CGFloat ratio = minFontSize / label.font.pointSize;
     [label setMinimumScaleFactor:ratio];
