@@ -1,6 +1,7 @@
-# ti.labelextension
+# ti.labelextension iOS module for Titanium Mobile SDK 
+(https://titaniumsdk.com)
 
-**High-Performance UILabel Extension for Appcelerator Titanium on iOS**
+**High-Performance UILabel Extension for Titanium Mobile SDK on iOS**
 
 Replaces the standard Titanium `UILabel` with an optimized implementation that eliminates blended layers, improves rendering performance by up to 10x, and dramatically improves scroll performance in `ListView`, `ScrollView`, and `TableView`.
 
