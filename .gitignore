@@ -18,3 +18,4 @@ android/build.properties
 android/java-sources.txt
 android/libs/
 android/av.imageview.gradle
+.pi/task_tree
