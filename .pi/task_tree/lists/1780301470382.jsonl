@@ -1,8 +1,0 @@
-{"version":1}
-{"index":"1","parentIndex":"root","title":"frameSizeChanged: tote Variablen entfernen","description":"complete","completed":false,"deleted":false}
-{"index":"2","parentIndex":"root","title":"padLabel: isEqual:@\\\"FILL\\\" Cache + fontSizeWithFont binäre Suche","description":"complete","completed":false,"deleted":false}
-{"index":"3","parentIndex":"root","title":"setAttributedString_ & setBackgroundColor_: redundante opaque-Zuweisungen entfernen","description":"complete","completed":false,"deleted":false}
-{"index":"4","parentIndex":"root","title":"getLink: NSNumber-Rundreise entfernen","description":"complete","completed":false,"deleted":false}
-{"index":"5","parentIndex":"root","title":"allowsDefaultTighteningForTruncation iOS-9-Check entfernen","description":"complete","completed":false,"deleted":false}
-{"index":"6","parentIndex":"root","title":"setEllipsize_: Typ-Check korrigieren","description":"complete","completed":false,"deleted":false}
-{"index":"7","parentIndex":"root","title":"Build testen & commit","description":"complete","completed":false,"deleted":false}
